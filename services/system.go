@@ -64,8 +64,13 @@ func GetSystemInfo() (*SystemInfo, error) {
 
 	cpuInfo, err := cpu.Info()
 	if err == nil && len(cpuInfo) > 0 {
-		info.CPU.Cores = int(cpuInfo[0].Cores)
 		info.CPU.Frequency = cpuInfo[0].Mhz
+	}
+
+	// Get actual CPU core count (logical cores)
+	cores, err := cpu.Counts(true) // true = logical cores
+	if err == nil {
+		info.CPU.Cores = cores
 	}
 
 	// CPU Temperature (Raspberry Pi specific)
