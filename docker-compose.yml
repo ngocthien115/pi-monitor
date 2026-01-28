@@ -1,0 +1,15 @@
+services:
+  pi-monitor:
+    build: .
+    container_name: pi-monitor-bot
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      # Mount host system info for monitoring
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/rootfs:ro
+    # Required for reading host system info
+    privileged: true
