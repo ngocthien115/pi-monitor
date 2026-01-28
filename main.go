@@ -6,6 +6,7 @@ import (
 
 	"pi-monitor/config"
 	"pi-monitor/handlers"
+	"pi-monitor/services"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -28,6 +29,39 @@ func main() {
 		log.Printf("🔒 Whitelist enabled: %d users allowed", len(cfg.AllowedUsers))
 	} else {
 		log.Printf("⚠️  Whitelist disabled: all users can use this bot")
+	}
+
+	// Start alert monitoring if enabled
+	if cfg.AlertEnabled && len(cfg.AllowedUsers) > 0 {
+		thresholds := services.AlertThresholds{
+			CPUTemperature: cfg.CPUTempThreshold,
+			CPUUsage:       cfg.CPUUsageThreshold,
+			MemoryUsage:    cfg.MemoryThreshold,
+			DiskUsage:      cfg.DiskThreshold,
+		}
+		checker := services.NewAlertChecker(thresholds)
+
+		go services.StartMonitoring(checker, cfg.AlertInterval, func(alerts []services.Alert) {
+			message := services.FormatAlerts(alerts)
+
+			// Gửi alert đến tất cả allowed users
+			for _, userID := range cfg.AllowedUsers {
+				msg := tgbotapi.NewMessage(userID, message)
+				msg.ParseMode = "Markdown"
+
+				if _, err := bot.Send(msg); err != nil {
+					log.Printf("❌ Error sending alert to %d: %v", userID, err)
+				} else {
+					log.Printf("✅ Alert sent to user %d", userID)
+				}
+			}
+		})
+
+		log.Printf("🚨 Alert monitoring enabled (Users: %d, Interval: %v)", len(cfg.AllowedUsers), cfg.AlertInterval)
+	} else if cfg.AlertEnabled && len(cfg.AllowedUsers) == 0 {
+		log.Printf("⚠️  Alert enabled but ALLOWED_USERS not set - alerts disabled")
+	} else {
+		log.Printf("ℹ️  Alert monitoring disabled (set ALERT_ENABLED=true to enable)")
 	}
 
 	u := tgbotapi.NewUpdate(0)
@@ -68,8 +102,15 @@ func main() {
 		case "start":
 			msg = tgbotapi.NewMessage(chatID, "👋 Xin chào! Sử dụng lệnh /pi để xem thông tin hệ thống Raspberry Pi.")
 		case "help":
-			msg = tgbotapi.NewMessage(chatID, "📖 *Danh sách lệnh:*\n\n/pi - Xem thông tin hệ thống (CPU, RAM, Disk, Network)\n/id - Xem User ID của bạn\n/help - Hiển thị trợ giúp")
+			helpText := "📖 *Danh sách lệnh:*\n\n" +
+				"/pi - Xem thông tin hệ thống (CPU, RAM, Disk, Network)\n" +
+				"/id - Xem User ID của bạn\n" +
+				"/alert - Xem trạng thái cảnh báo\n" +
+				"/help - Hiển thị trợ giúp"
+			msg = tgbotapi.NewMessage(chatID, helpText)
 			msg.ParseMode = "Markdown"
+		case "alert":
+			msg = handleAlertStatus(chatID, cfg)
 		default:
 			msg = tgbotapi.NewMessage(chatID, "❓ Lệnh không hợp lệ. Sử dụng /help để xem danh sách lệnh.")
 		}
@@ -78,4 +119,37 @@ func main() {
 			log.Printf("Error sending message: %v", err)
 		}
 	}
+}
+
+// handleAlertStatus trả về thông tin về trạng thái alert
+func handleAlertStatus(chatID int64, cfg *config.Config) tgbotapi.MessageConfig {
+	var status string
+	if cfg.AlertEnabled && len(cfg.AllowedUsers) > 0 {
+		status = fmt.Sprintf(`🚨 *Trạng thái cảnh báo*
+
+✅ *Trạng thái:* Đang hoạt động
+⏱️ *Kiểm tra mỗi:* %v
+👥 *Gửi đến:* %d người dùng
+
+📊 *Ngưỡng cảnh báo:*
+├ 🌡️ Nhiệt độ CPU: > %.0f°C
+├ 📈 Sử dụng CPU: > %.0f%%
+├ 💾 Sử dụng RAM: > %.0f%%
+└ 💿 Sử dụng Disk: > %.0f%%
+
+_Bạn sẽ nhận cảnh báo khi hệ thống vượt ngưỡng_`,
+			cfg.AlertInterval,
+			len(cfg.AllowedUsers),
+			cfg.CPUTempThreshold,
+			cfg.CPUUsageThreshold,
+			cfg.MemoryThreshold,
+			cfg.DiskThreshold,
+		)
+	} else {
+		status = "🚨 *Trạng thái cảnh báo*\n\n❌ *Trạng thái:* Đã tắt\n\n_Đặt ALERT\\_ENABLED=true và ALLOWED\\_USERS để bật_"
+	}
+
+	msg := tgbotapi.NewMessage(chatID, status)
+	msg.ParseMode = "Markdown"
+	return msg
 }

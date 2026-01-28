@@ -7,6 +7,13 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - ALLOWED_USERS=${ALLOWED_USERS}
       - TZ=Asia/Ho_Chi_Minh
+      # Alert settings
+      - ALERT_ENABLED=${ALERT_ENABLED:-false}
+      - ALERT_INTERVAL=${ALERT_INTERVAL:-30}
+      - ALERT_CPU_TEMP=${ALERT_CPU_TEMP:-70}
+      - ALERT_CPU_USAGE=${ALERT_CPU_USAGE:-90}
+      - ALERT_MEMORY=${ALERT_MEMORY:-85}
+      - ALERT_DISK=${ALERT_DISK:-90}
     volumes:
       # Mount host system info for monitoring
       - /proc:/host/proc:ro
