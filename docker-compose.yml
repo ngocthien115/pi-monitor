@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - ALLOWED_USERS=${ALLOWED_USERS}
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       # Mount host system info for monitoring
