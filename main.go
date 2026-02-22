@@ -104,6 +104,7 @@ func main() {
 		case "help":
 			helpText := "📖 *Danh sách lệnh:*\n\n" +
 				"/pi - Xem thông tin hệ thống (CPU, RAM, Disk, Network)\n" +
+				"/wake - Bật PC qua Wake-on-LAN\n" +
 				"/id - Xem User ID của bạn\n" +
 				"/alert - Xem trạng thái cảnh báo\n" +
 				"/help - Hiển thị trợ giúp"
@@ -111,6 +112,8 @@ func main() {
 			msg.ParseMode = "Markdown"
 		case "alert":
 			msg = handleAlertStatus(chatID, cfg)
+		case "wake":
+			msg = handlers.HandleWakeCommand(update.Message, cfg)
 		default:
 			msg = tgbotapi.NewMessage(chatID, "❓ Lệnh không hợp lệ. Sử dụng /help để xem danh sách lệnh.")
 		}

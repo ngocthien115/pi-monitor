@@ -20,6 +20,11 @@ type Config struct {
 	CPUUsageThreshold float64
 	MemoryThreshold   float64
 	DiskThreshold     float64
+
+	// Wake-on-LAN settings
+	WOLMACAddress string // MAC address của PC (vd: AA:BB:CC:DD:EE:FF)
+	WOLBroadcast  string // Broadcast address (vd: 192.168.1.255:9)
+	WOLHost       string // IP/hostname của PC để kiểm tra xem có đang bật không
 }
 
 func Load() *Config {
@@ -35,6 +40,11 @@ func Load() *Config {
 		CPUUsageThreshold: 90.0,
 		MemoryThreshold:   85.0,
 		DiskThreshold:     90.0,
+
+		// Wake-on-LAN
+		WOLMACAddress: os.Getenv("WOL_MAC_ADDRESS"),
+		WOLBroadcast:  getEnvOrDefault("WOL_BROADCAST", "255.255.255.255:9"),
+		WOLHost:       os.Getenv("WOL_HOST"),
 	}
 
 	// Parse Alert Interval (in seconds)
@@ -79,6 +89,14 @@ func Load() *Config {
 	}
 
 	return cfg
+}
+
+// getEnvOrDefault trả về giá trị env hoặc giá trị mặc định nếu env không được set
+func getEnvOrDefault(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultValue
 }
 
 // IsUserAllowed checks if a user ID is in the whitelist
