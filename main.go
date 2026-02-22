@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"pi-monitor/config"
 	"pi-monitor/handlers"
@@ -66,6 +67,24 @@ func main() {
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
+
+	// Gửi thông báo khởi động đến tất cả allowed users
+	if len(cfg.AllowedUsers) > 0 {
+		startupMsg := fmt.Sprintf(
+			"🟢 *Bot đã khởi động lại!*\n\n🤖 Bot: @%s\n🕐 Thời gian: `%s`\n\n_Sử dụng /help để xem danh sách lệnh._",
+			bot.Self.UserName,
+			formatTime(),
+		)
+		for _, userID := range cfg.AllowedUsers {
+			msg := tgbotapi.NewMessage(userID, startupMsg)
+			msg.ParseMode = "Markdown"
+			if _, err := bot.Send(msg); err != nil {
+				log.Printf("⚠️ Không thể gửi thông báo khởi động đến %d: %v", userID, err)
+			} else {
+				log.Printf("✅ Đã gửi thông báo khởi động đến user %d", userID)
+			}
+		}
+	}
 
 	updates := bot.GetUpdatesChan(u)
 
@@ -155,4 +174,13 @@ _Bạn sẽ nhận cảnh báo khi hệ thống vượt ngưỡng_`,
 	msg := tgbotapi.NewMessage(chatID, status)
 	msg.ParseMode = "Markdown"
 	return msg
+}
+
+// formatTime trả về thời gian hiện tại dạng dễ đọc theo timezone Asia/Ho_Chi_Minh
+func formatTime() string {
+	loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
+	if err != nil {
+		loc = time.UTC
+	}
+	return time.Now().In(loc).Format("02/01/2006 15:04:05")
 }

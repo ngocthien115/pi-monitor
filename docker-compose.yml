@@ -14,6 +14,10 @@ services:
       - ALERT_CPU_USAGE=${ALERT_CPU_USAGE:-90}
       - ALERT_MEMORY=${ALERT_MEMORY:-85}
       - ALERT_DISK=${ALERT_DISK:-90}
+      # Wake-on-LAN settings
+      - WOL_MAC_ADDRESS=${WOL_MAC_ADDRESS}
+      - WOL_HOST=${WOL_HOST}
+      - WOL_BROADCAST=${WOL_BROADCAST:-255.255.255.255:9}
     volumes:
       # Mount host system info for monitoring
       - /proc:/host/proc:ro
