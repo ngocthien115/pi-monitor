@@ -104,9 +104,6 @@ func main() {
 		// Check whitelist
 		if !cfg.IsUserAllowed(userID) {
 			log.Printf("🚫 Unauthorized access attempt from user %d (@%s)", userID, username)
-			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("🚫 Bạn không có quyền sử dụng bot này.\n\n🆔 Your User ID: `%d`", userID))
-			msg.ParseMode = "Markdown"
-			bot.Send(msg)
 			continue
 		}
 
